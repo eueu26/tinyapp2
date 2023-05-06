@@ -4,10 +4,15 @@ const PORT = 8080;
 
 app.set("view engine", "ejs");
 
-const urlDatabase = [
-  {shortId: "b2xVn2", longUrl: "http://www.lighthouselabs.ca"},
-  {shortId: "9sm5xK", longUrl: "http://www.google.com"}
+let urlDatabase = [
+  {id: "b2xVn2", longUrl: "http://www.lighthouselabs.ca"},
+  {id: "9sm5xK", longUrl: "http://www.google.com"}
 ];
+
+app.get("/urls/:id", (req, res) => {
+  let templateVars = {id: req.params.id, longUrl: "http://www.lighthouselabs.ca"};
+  res.render("urls_show", templateVars);
+});
 
 app.get("/urls", (req, res) => {
   res.render("urls_index.ejs", {urlDatabase: urlDatabase});
