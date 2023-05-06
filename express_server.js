@@ -9,6 +9,7 @@ let urlDatabase = [
   {id: "9sm5xK", longUrl: "http://www.google.com"}
 ];
 
+
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
@@ -33,6 +34,8 @@ app.get("/", (req, res) => {
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
+
+app.use(express.urlencoded({ extended: true }));
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
