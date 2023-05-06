@@ -32,12 +32,12 @@
           </tr>
         </thead>
         <tbody>
-          <% urlDatabase.forEach(function(id) { %>
+          <% for (let id in urls) { %>
             <tr>
-              <td><%= id.id %></td>
-              <td><%= id.longUrl %></td>
+              <td><%= id %></td>
+              <td><%= urls[id] %></td>
             </tr>
-          <% }) %>
+          <% } %>
         </tbody>
       </table>
     </main>
