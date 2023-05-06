@@ -9,6 +9,10 @@ let urlDatabase = [
   {id: "9sm5xK", longUrl: "http://www.google.com"}
 ];
 
+app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
+});
+
 app.get("/urls/:id", (req, res) => {
   let templateVars = {id: req.params.id, longUrl: "http://www.lighthouselabs.ca"};
   res.render("urls_show", templateVars);
@@ -18,12 +22,12 @@ app.get("/urls", (req, res) => {
   res.render("urls_index.ejs", {urlDatabase: urlDatabase});
 });
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
+});
+
+app.get("/", (req, res) => {
+  res.send("Hello!");
 });
 
 app.get("/hello", (req, res) => {
