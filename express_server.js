@@ -16,19 +16,29 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+app.post("urls/:id/delete", (req, res) => {
+  const id = req.params.id;
+  delete urlDatabase[id];
+  res.redirect("/urls");
+});
 
 app.get("/u/:id", (req, res) => {
-  const longURL = "http://www.lighthouselabs.ca";
+  const shortId = req.params.id;
+  const longURL = urlDatabase[shortId].longURL;
   res.redirect(longURL);
 });
 
 app.post("/urls", (req, res) => {
   // console.log(req.body);
-  // res.send("Ok");
-  // const longURL = req.body.longURL;
-  const id = {id: generateRandomString(), longURL: req.body.longURL};
-  res.redirect(`/urls/${id}`);
+  
+  const id = req.body.longURL;
+  const newId = generateRandomString();
+  urlDatabase[newId] = {
+    newId: id,
+  };
+  res.redirect(`/urls/${newId}`);
 });
+
 
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
