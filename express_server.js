@@ -17,16 +17,17 @@ const urlDatabase = {
 };
 
 
-// app.get("/u/:id", (req, res) => {
-//   const longURL = "http://www.lighthouselabs.ca";
-//   res.redirect(longURL);
-// });
+app.get("/u/:id", (req, res) => {
+  const longURL = "http://www.lighthouselabs.ca";
+  res.redirect(longURL);
+});
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);
-  res.send("Ok");
-  // let id = generateRandomString();
-  // res.redirect(`/urls/${id}`);
+  // console.log(req.body);
+  // res.send("Ok");
+  // const longURL = req.body.longURL;
+  const id = {id: generateRandomString(), longURL: req.body.longURL};
+  res.redirect(`/urls/${id}`);
 });
 
 app.get("/urls/new", (req, res) => {
