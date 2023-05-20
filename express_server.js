@@ -1,28 +1,18 @@
 /////////////////////////////////////////////////////////////////////
-// Requires
-/////////////////////////////////////////////////////////////////////
-
-const express = require("express");
-
-/////////////////////////////////////////////////////////////////////
 // Initialization
 /////////////////////////////////////////////////////////////////////
 
+const express = require("express");
 const app = express();
 const PORT = 8080;
+app.set("view engine", "ejs");
 
 /////////////////////////////////////////////////////////////////////
-// Requires
+// Middleware
 /////////////////////////////////////////////////////////////////////
 
 app.use(express.urlencoded({ extended: true }));
 
-
-/////////////////////////////////////////////////////////////////////
-// Configuration
-/////////////////////////////////////////////////////////////////////
-
-app.set("view engine", "ejs");
 
 /////////////////////////////////////////////////////////////////////
 // "Database"
@@ -33,24 +23,24 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com",
 };
 
-const generateRandomString = function () {
+const generateRandomString = function() {
   return Math.random().toString(36).substring(2, 8);
 };
 
 /////////////////////////////////////////////////////////////////////
 // Routes
 /////////////////////////////////////////////////////////////////////
-// app.get("/", (req, res) => {
-//   res.send("Hello!");
-// });
+app.get("/", (req, res) => {
+  res.send("Hello!");
+});
 
-// app.get("/urls.json", (req, res) => {
-//   res.json(urlDatabase);
-// });
+app.get("/urls.json", (req, res) => {
+  res.json(urlDatabase);
+});
 
-// app.get("/hello", (req, res) => {
-//   res.send("<html><body>Hello <b>World</b></body></html>\n");
-// });
+app.get("/hello", (req, res) => {
+  res.send("<html><body>Hello <b>World</b></body></html>\n");
+});
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
@@ -75,10 +65,14 @@ app.post("/urls", (req, res) => {
 
 app.get("/u/:id", (req, res) => {
   const id = req.params.id;
-  // console.log(urlDatabase[id]);
   res.redirect(urlDatabase[id]);
 });
 
+app.post("/urls/:id/delete", (req, res) => {
+  const id = req.params.id;
+  delete urlDatabase[id];
+  res.redirect("/urls");
+});
 
 /////////////////////////////////////////////////////////////////////
 // Listener
@@ -86,4 +80,3 @@ app.get("/u/:id", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
