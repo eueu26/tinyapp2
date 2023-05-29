@@ -19,7 +19,31 @@
       </div>
     </div>
     
-   
+    <!-- <% if (!username) { %> -->
+      <!-- <a href="/login">Login</a> -->
+    <form class="form-inline" method="POST" action="/login">
+      <div>
+        <lable>
+            
+            <input type="text" name="username" placeholder="Username">
+        </lable>
+            
+        <button type="submit" class="btn btn-outline-dark" style="margin-right:1em">Login</button>
+      
+      </div>
+    </form>
+    <!-- <% } %> -->
+
+    <% if (username) { %>
+    <span > 
+        Logged in as: <%= username %>
+    </span>
+    <form method="POST" action="/logout">
+      <button type="submit" class="btn btn-outline-dark" style="margin-right:2em">Logout</button> 
+    </form>
+    <% } %>
+    
+
   </nav>
 </header>
 
