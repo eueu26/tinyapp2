@@ -31,11 +31,14 @@
         <h4>Edit</h4>
         <form action="/urls/<%=id%>" method="POST">
           <div>
-            <label for="newURL"> New URL: </label>
-            <input type="text" name="newURL" placeholder="<%= longURL %>">
-            <input type="submit" class="btn btn-primary">
+            <label for="newURL"> 
+              New URL: 
+              <input type="text" name="newURL" placeholder="<%= longURL %>">
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </label>
           </div>
         </form>
+      </div>
       </div>
 
 

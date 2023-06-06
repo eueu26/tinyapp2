@@ -6,10 +6,7 @@ const express = require("express");
 // const cookieParser = require("cookie-parser");
 const bcrypt = require("bcryptjs");
 const cookieSession = require("cookie-session");
-const {
-  generateRandomString,
-  urlsForUser,
-} = require("./helpers");
+const { generateRandomString, urlsForUser } = require("./helpers");
 
 /////////////////////////////////////////////////////////////////////
 // Initialization
@@ -90,47 +87,81 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+app.post("/urls", (req, res) => {
+  const username = req.session.userId;
+  const id = generateRandomString();
+  const longURL = req.body.longURL;
+  urlDatabase[id] = { longURL: longURL, userId: username };
+  res.redirect(`/urls/${id}`);
+});
+
 app.get("/urls/new", (req, res) => {
   const templateVars = {
     username: users[req.session.userId],
   };
+  if (!templateVars.user) {
+    res.redirect("/login");
+  }
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:id", (req, res) => {
   const id = req.params.id;
-  const templateVars = {
-    id,
-    longURL: urlDatabase[id],
-    username: users[req.session.userId],
-  };
-  res.render("urls_show", templateVars);
-});
-
-app.post("/urls", (req, res) => {
-  const id = generateRandomString();
-  urlDatabase[id] = req.body.longURL;
-  res.redirect(`/urls/${id}`);
+  if (urlDatabase[id]) {
+    const templateVars = {
+      id,
+      longURL: urlDatabase[id].longURL,
+      username: users[req.session.userId],
+    };
+    res.render("urls_show", templateVars);
+  } else {
+    return res.status(400).send("The id does not match with a longURL");
+  }
 });
 
 app.get("/u/:id", (req, res) => {
   const id = req.params.id;
-  res.redirect(urlDatabase[id]);
+  if (urlDatabase[id]) {
+    const longURL = urlDatabase[id].longURL;
+    res.redirect(longURL);
+  } else {
+    return res.status(400).send("Unknown longURL");
+  }
 });
 
 app.post("/urls/:id/delete", (req, res) => {
   const id = req.params.id;
-  delete urlDatabase[id];
-  res.redirect("/urls");
+  const username = req.session.userId;
+  if (username) {
+    delete urlDatabase[id];
+    res.redirect("/urls");
+  } else {
+    return res.status(400).send("Unauthorized to delete.");
+  }
 });
 
 app.post("/urls/:id", (req, res) => {
   const id = req.params.id;
-  urlDatabase[id] = req.body.newURL;
+  const username = req.session.userId;
+  if (username) {
+    const usernameURL = urlsForUser(username, urlDatabase);
+    if (usernameURL[id]) {
+      urlDatabase[id].longURL = req.body.longURL;
+      res.redirect("/urls");
+    } else {
+      return res.status(400).send("Invalid");
+    }
+  }
 
-  res.redirect("/urls");
 });
 
+app.get("/login", (req, res) => {
+  const username = users[req.session.userId];
+  const templateVars = {
+    username: username,
+  };
+  res.render("urls_login", templateVars);
+});
 
 app.post("/login", (req, res) => {
   const username = req.body.username;
@@ -144,11 +175,11 @@ app.post("/login", (req, res) => {
     }
   }
   if (!knowUser) {
-    return res.send(`No username ${username} was found`);
+    return res.status(400).send(`No username ${username} was found`);
   }
 
   if (!bcrypt.compareSync(password, knowUser.password)) {
-    return res.send("The password is incorrect");
+    return res.status(400).send("The password is incorrect");
   }
   res.redirect("/urls");
 });
@@ -159,12 +190,13 @@ app.post("/logout", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  const username = req.body.username;
-  const password = req.body.password;
+  const username = users[req.session.userId];
   const templateVars = {
     username: username,
-    password: password,
   };
+  if (templateVars.username) {
+    templateVars["username"] = username;
+  }
   res.render("urls_register", templateVars);
 });
 
@@ -173,7 +205,7 @@ app.post("/register", (req, res) => {
   const password = req.body.password;
 
   if (!username || !password) {
-    return res.send("username or password is incorrect. Please try again.");
+    return res.status(400).send("username or password is incorrect. Please try again.");
   }
 
   let knowUser = null;
@@ -186,7 +218,7 @@ app.post("/register", (req, res) => {
   }
 
   if (knowUser) {
-    return res.send("username already exists");
+    return res.status(400).send("username already exists");
   }
 
   const id = generateRandomString();
