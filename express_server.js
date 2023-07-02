@@ -3,10 +3,13 @@
 /////////////////////////////////////////////////////////////////////
 
 const express = require("express");
-// const cookieParser = require("cookie-parser");
 const bcrypt = require("bcryptjs");
 const cookieSession = require("cookie-session");
-const { generateRandomString, urlsForUser } = require("./helpers");
+const {
+  generateRandomString,
+  urlsForUser,
+  getUserByUsername,
+} = require("./helpers");
 
 /////////////////////////////////////////////////////////////////////
 // Initialization
@@ -40,8 +43,6 @@ app.set("view engine", "ejs");
 // "Database"
 /////////////////////////////////////////////////////////////////////
 
-// const cookieUserId = "userId";
-
 const urlDatabase = {
   b2xVn2: "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
@@ -61,7 +62,7 @@ const users = {
 };
 
 /////////////////////////////////////////////////////////////////////
-// Routes
+// Routes & Homepage
 /////////////////////////////////////////////////////////////////////
 app.get("/", (req, res) => {
   if (req.session.userId) {
@@ -71,14 +72,10 @@ app.get("/", (req, res) => {
   }
 });
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
+/////////////////////////////////////////////////////////////////////
+// Urls
+/////////////////////////////////////////////////////////////////////
 app.get("/urls", (req, res) => {
   const templateVars = {
     urls: urlsForUser(req.session.userId, urlDatabase),
@@ -95,12 +92,16 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${id}`);
 });
 
+/////////////////////////////////////////////////////////////////////
+// Urls/New & /Id
+/////////////////////////////////////////////////////////////////////
 app.get("/urls/new", (req, res) => {
   const templateVars = {
     username: users[req.session.userId],
   };
   if (!templateVars.user) {
     res.redirect("/login");
+    return;
   }
   res.render("urls_new", templateVars);
 });
@@ -129,6 +130,10 @@ app.get("/u/:id", (req, res) => {
   }
 });
 
+
+/////////////////////////////////////////////////////////////////////
+// Urls/:id & /Delete
+/////////////////////////////////////////////////////////////////////
 app.post("/urls/:id/delete", (req, res) => {
   const id = req.params.id;
   const username = req.session.userId;
@@ -152,13 +157,16 @@ app.post("/urls/:id", (req, res) => {
       return res.status(400).send("Invalid");
     }
   }
-
 });
 
+
+/////////////////////////////////////////////////////////////////////
+// Login & Logout
+/////////////////////////////////////////////////////////////////////
 app.get("/login", (req, res) => {
   const username = users[req.session.userId];
   const templateVars = {
-    username: username,
+    username,
   };
   res.render("urls_login", templateVars);
 });
@@ -166,22 +174,16 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
+  const knowUser = getUserByUsername(username, users);
 
-  let knowUser = null;
-  for (const userId in users) {
-    const user = users[userId];
-    if (user.username === username) {
-      knowUser = user;
-    }
+  if (knowUser && bcrypt.compareSync(password, knowUser.password)) {
+    req.session.userId = knowUser.userId;
+    res.redirect("/urls");
+  } else {
+    return res
+      .status(401)
+      .send(`Credentials Invalid. Username or Password is Incorrect`);
   }
-  if (!knowUser) {
-    return res.status(400).send(`No username ${username} was found`);
-  }
-
-  if (!bcrypt.compareSync(password, knowUser.password)) {
-    return res.status(400).send("The password is incorrect");
-  }
-  res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
@@ -189,51 +191,50 @@ app.post("/logout", (req, res) => {
   req.redirect("/urls");
 });
 
+
+/////////////////////////////////////////////////////////////////////
+// Registration
+/////////////////////////////////////////////////////////////////////
 app.get("/register", (req, res) => {
+  if (req.session.userId) {
+    res.redirect("/urls");
+    return;
+  }
   const username = users[req.session.userId];
   const templateVars = {
     username: username,
   };
-  if (templateVars.username) {
-    templateVars["username"] = username;
-  }
   res.render("urls_register", templateVars);
 });
+
 
 app.post("/register", (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
+  const knowUser = getUserByUsername(username, users);
 
-  if (!username || !password) {
-    return res.status(400).send("username or password is incorrect. Please try again.");
-  }
-
-  let knowUser = null;
-
-  for (const userId in users) {
-    const user = users[userId];
-    if (user.username === username) {
-      knowUser = user;
+  if (username && password) {
+    if (!knowUser) {
+      const id = generateRandomString();
+      const salt = bcrypt.genSaltSync(10);
+      const hash = bcrypt.hashSync(password, salt);
+      const newUser = {
+        id: id,
+        username: username,
+        password: hash,
+      };
+      users[id] = newUser;
+      res.redirect("/urls");
+    } else {
+      return res.status(400).send("Username already exists");
     }
+  } else {
+    return res
+      .status(400)
+      .send("username or password is incorrect. Please try again.");
   }
-
-  if (knowUser) {
-    return res.status(400).send("username already exists");
-  }
-
-  const id = generateRandomString();
-  const salt = bcrypt.genSaltSync(10);
-  const hash = bcrypt.hashSync(password, salt);
-
-  const newUser = {
-    id: id,
-    username: username,
-    password: hash,
-  };
-  users[id] = newUser;
-
-  res.redirect("/urls");
 });
+
 
 /////////////////////////////////////////////////////////////////////
 // Listener

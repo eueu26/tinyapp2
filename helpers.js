@@ -12,4 +12,16 @@ const urlsForUser = (id, urlDatabase) => {
   return urlsUser;
 };
 
-module.exports = { generateRandomString, urlsForUser};
+const getUserByUsername = (username, users) => {
+  let knowUser = null;
+  for (const userId in users) {
+    const user = users[userId];
+    if (user.username === username) {
+      knowUser = user;
+    }
+  }
+  return knowUser;
+};
+
+
+module.exports = { generateRandomString, urlsForUser, getUserByUsername};
