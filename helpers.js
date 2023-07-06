@@ -23,5 +23,33 @@ const getUserByUsername = (username, users) => {
   return knowUser;
 };
 
+const usernameSearch = (username, users) => {
+  for (let user in users) {
+    if (username === users[user].username) {
+      return username;
+    }
+  }
+  return undefined;
+};
 
-module.exports = { generateRandomString, urlsForUser, getUserByUsername};
+const passwordSearch = (username, users) => {
+  for (let user in users) {
+    if (username === users[user].username) {
+      return users[user].password;
+    }
+  }
+  return undefined;
+};
+
+const userIdSearch = (username, users) => {
+  for (let user in users) {
+    if (username === users[user].username) {
+      return users[user].id;
+    }
+  }
+  return undefined;
+};
+
+
+
+module.exports = { generateRandomString, urlsForUser, getUserByUsername, usernameSearch, passwordSearch, userIdSearch};
