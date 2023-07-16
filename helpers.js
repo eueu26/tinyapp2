@@ -5,9 +5,7 @@ const generateRandomString = function () {
 const urlsForUser = (id, urlDatabase) => {
   const urlsUser = {};
   for (const shortUrl in urlDatabase) {
-    if (urlDatabase[shortUrl].user === id) {
-      urlsUser[shortUrl] = urlDatabase[shortUrl];
-    }
+    urlsUser[shortUrl] = urlDatabase[shortUrl];
   }
   return urlsUser;
 };
@@ -32,24 +30,6 @@ const usernameSearch = (username, users) => {
   return undefined;
 };
 
-const passwordSearch = (username, users) => {
-  for (let user in users) {
-    if (username === users[user].username) {
-      return users[user].password;
-    }
-  }
-  return undefined;
-};
-
-const userIdSearch = (username, users) => {
-  for (let user in users) {
-    if (username === users[user].username) {
-      return users[user].id;
-    }
-  }
-  return undefined;
-};
 
 
-
-module.exports = { generateRandomString, urlsForUser, getUserByUsername, usernameSearch, passwordSearch, userIdSearch};
+module.exports = { generateRandomString, urlsForUser, getUserByUsername, usernameSearch};
