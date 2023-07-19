@@ -20,13 +20,13 @@
     </div>
     
    
-    <% if (username) { %>
-        <h2 class="navbar-brand">Logged in as: <%= username.username %></h2>
+    <% if (user) { %>
+        <h2 class="navbar-brand">Logged in as: <%= user.email %></h2>
         <form method="POST" action="/logout" class="form-inline">
           <button class="btn btn-primary" type="submit">Logout</button>
         </form>
         <% } %>
-        <% if (!username) {%> 
+        <% if (!user) {%> 
           <div class="navbar-nav">
             <a href="/login" class="nav-item nav-link">Login</a>
             <a href="/register" class="nav-item nav-link">Register</a>

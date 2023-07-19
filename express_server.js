@@ -45,8 +45,7 @@ app.set("view engine", "ejs");
 /////////////////////////////////////////////////////////////////////
 
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  
 };
 
 const users = {
@@ -73,21 +72,26 @@ app.get("/", (req, res) => {
 // Urls
 /////////////////////////////////////////////////////////////////////
 app.get("/urls", (req, res) => {
-  
+  if (!req.session.userId) {
+    return res.redirect("/login");
+  }
   const templateVars = {
     urls: urlsForUser(req.session.userId, urlDatabase),
     userId: req.session.userId,
-    username: users[req.session.userId]
+    user: users[req.session.userId],
   };
   res.render("urls_index", templateVars);
 });
 
 app.post("/urls", (req, res) => {
-  const username = req.session.userId;
-  const longURL = req.body.longURL;
-  const id = generateRandomString();
-  urlDatabase[id] = longURL;
-  res.redirect(`/urls/${id}`);
+  if (!req.session.userId) {
+    res.status(401).send("Unauthorized access. Please Login");
+  } else {
+    const longURL = req.body.longURL;
+    const id = generateRandomString();
+    urlDatabase[id] = {longURL, userId: req.session.userId};
+    res.redirect(`/urls/${id}`);
+  }
 });
 
 /////////////////////////////////////////////////////////////////////
@@ -97,7 +101,7 @@ app.get("/urls/new", (req, res) => {
   if (req.session.userId) {
     const templateVars = {
       userId: req.session.userId,
-      username: users[req.session.userId],
+      user: users[req.session.userId],
     };
     res.render("urls_new", templateVars);
   } else {
@@ -110,12 +114,11 @@ app.get("/urls/:id", (req, res) => {
   if (req.session.userId) {
     const templateVars = {
       id,
-      longURL: urlDatabase[id],
-      username: users[req.session.userId]
+      longURL: urlDatabase[id].longURL,
+      user: users[req.session.userId],
     };
-    
+
     res.render("urls_show", templateVars);
-    
   } else {
     res.status(401).send("Unauthorized to Edit. Please Login");
   }
@@ -123,7 +126,11 @@ app.get("/urls/:id", (req, res) => {
 
 app.get("/u/:id", (req, res) => {
   const id = req.params.id;
+  if (urlDatabase[id] === undefined) {
+    return res.status(404).send("URL not found.");
+  }
   const longURL = urlDatabase[id].longURL;
+
   res.redirect(longURL);
 });
 
@@ -132,8 +139,8 @@ app.get("/u/:id", (req, res) => {
 /////////////////////////////////////////////////////////////////////
 app.post("/urls/:id/delete", (req, res) => {
   const id = req.params.id;
-  const username = req.session.userId;
-  if (urlDatabase[id].userId === username) {
+  const user = req.session.userId;
+  if (urlDatabase[id].userId === user) {
     delete urlDatabase[id];
     res.redirect("/urls");
   } else {
@@ -143,11 +150,9 @@ app.post("/urls/:id/delete", (req, res) => {
 
 app.post("/urls/:id", (req, res) => {
   const id = req.params.id;
-  const username = req.session.userId;
+  const user = req.session.userId;
 
-  if (
-    urlDatabase[id].userId === username
-  ) {
+  if (urlDatabase[id].userId === user) {
     const longURL = req.body.longURL;
     urlDatabase[id].longURL = longURL;
     res.redirect("/urls");
@@ -160,30 +165,30 @@ app.post("/urls/:id", (req, res) => {
 // Login & Logout
 /////////////////////////////////////////////////////////////////////
 app.get("/login", (req, res) => {
-  const username = users[req.session.userId];
+  const user = users[req.session.userId];
   const templateVars = {
-    username,
+    user,
   };
   res.render("urls_login", templateVars);
 });
 
 app.post("/login", (req, res) => {
-  const username = req.body.username;
+  const email = req.body.email;
   const password = req.body.password;
-  const knowUser = getUserByUsername(username, users);
+  const knowUser = getUserByUsername(email, users);
 
   if (!knowUser) {
     const templateVars = {
       status: 401,
-      message: "Please Register if username or password is not created.",
-      username: users[req.session.userId],
+      message: "Please Register if email or password is not created.",
+      user: users[req.session.userId],
     };
     res.status(401).render("urls_error", templateVars);
   } else if (!bcrypt.compareSync(password, knowUser.password)) {
     const templateVars = {
       status: 401,
-      message: "Incorrect username or password.",
-      username: users[req.session.userId],
+      message: "Incorrect email or password.",
+      user: users[req.session.userId],
     };
     res.status(401).render("urls_error", templateVars);
   } else {
@@ -201,34 +206,36 @@ app.post("/logout", (req, res) => {
 // Registration
 /////////////////////////////////////////////////////////////////////
 app.get("/register", (req, res) => {
-  const username = users[req.session.userId];
+  const user = users[req.session.userId];
   const templateVars = {
-    username: username,
+    user: user,
   };
-  if (templateVars.username) {
-    templateVars["username"] = username;
+  if (templateVars.user) {
+    templateVars["user"] = user;
   }
   res.render("urls_register", templateVars);
 });
 
 app.post("/register", (req, res) => {
-  const username = req.body.username;
+  const email = req.body.email;
   const password = req.body.password;
-  // const knowUser = getUserByUsername(username, users);
+
+  if (!email || !password) {
+    return res.status(400).send("Register with a vaild Email or Password");
+  }
+
   const newId = generateRandomString();
   const salt = bcrypt.genSaltSync(10);
   const hash = bcrypt.hashSync(password, salt);
 
   const user = {
     id: newId,
-    username: username,
+    email: email,
     password: hash,
   };
-  const userEmail = usernameSearch(username, users);
+  const userEmail = usernameSearch(email, users);
 
-  if (user.username === "" || user.password === "") {
-    res.status(400).send("Register with a vaild Username or Password");
-  } else if (!userEmail) {
+  if (!userEmail) {
     users[newId] = user;
     req.session["userId"] = newId;
     res.redirect("/urls");
