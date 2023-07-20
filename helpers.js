@@ -10,26 +10,32 @@ const urlsForUser = (id, urlDatabase) => {
   return urlsUser;
 };
 
-const getUserByUsername = (username, users) => {
-  let knowUser = null;
-  for (const userId in users) {
-    const user = users[userId];
-    if (user.username === username) {
-      knowUser = user;
-    }
-  }
-  return knowUser;
-};
-
-const usernameSearch = (username, users) => {
-  for (let user in users) {
-    if (username === users[user].username) {
-      return username;
+const getUserByEmail = (email, users) => {
+  for (const user in users) {
+    if (users[user].email === email) {
+      return users[user];
     }
   }
   return undefined;
 };
 
 
+const existEmail = (email, users) => {
+  for (let user in users) {
+    if (email === users[user].email) {
+      return true;
+    }
+  }
+};
 
-module.exports = { generateRandomString, urlsForUser, getUserByUsername, usernameSearch};
+const getIdOfUser = (id, users) => {
+  const user = users[id];
+  if (user) {
+    return user;
+  }
+  return undefined;
+};
+
+
+
+module.exports = { generateRandomString, urlsForUser, getUserByEmail,  existEmail, getIdOfUser};

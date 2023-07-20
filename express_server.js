@@ -8,8 +8,9 @@ const cookieSession = require("cookie-session");
 const {
   generateRandomString,
   urlsForUser,
-  getUserByUsername,
-  usernameSearch,
+  getUserByEmail,
+  existEmail,
+  getIdOfUser,
 } = require("./helpers");
 
 /////////////////////////////////////////////////////////////////////
@@ -72,24 +73,27 @@ app.get("/", (req, res) => {
 // Urls
 /////////////////////////////////////////////////////////////////////
 app.get("/urls", (req, res) => {
-  if (!req.session.userId) {
+  const userId = req.session.userId;
+  const user = getIdOfUser(userId, users);
+  if (!user) {
     return res.redirect("/login");
   }
   const templateVars = {
-    urls: urlsForUser(req.session.userId, urlDatabase),
-    userId: req.session.userId,
-    user: users[req.session.userId],
+    urls: urlsForUser(userId, urlDatabase),
+    userId: userId,
+    user: users[userId],
   };
   res.render("urls_index", templateVars);
 });
 
 app.post("/urls", (req, res) => {
-  if (!req.session.userId) {
+  const userId = req.session.userId;
+  if (!userId) {
     res.status(401).send("Unauthorized access. Please Login");
-  } else {
+  } else if (getIdOfUser(userId, users)) {
     const longURL = req.body.longURL;
     const id = generateRandomString();
-    urlDatabase[id] = {longURL, userId: req.session.userId};
+    urlDatabase[id] = {longURL, userId: userId};
     res.redirect(`/urls/${id}`);
   }
 });
@@ -98,26 +102,28 @@ app.post("/urls", (req, res) => {
 // Urls/New & /Id
 /////////////////////////////////////////////////////////////////////
 app.get("/urls/new", (req, res) => {
-  if (req.session.userId) {
+  const userId = req.session.userId;
+  if (userId) {
     const templateVars = {
       userId: req.session.userId,
       user: users[req.session.userId],
     };
     res.render("urls_new", templateVars);
-  } else {
+  } else if (getIdOfUser(userId, users) === null) {
     res.redirect("/login");
   }
 });
 
 app.get("/urls/:id", (req, res) => {
+  const userId = req.session.userId;
   const id = req.params.id;
-  if (req.session.userId) {
+  if (urlDatabase[id].userId === userId) {
     const templateVars = {
       id,
       longURL: urlDatabase[id].longURL,
-      user: users[req.session.userId],
+      user: users[userId],
     };
-
+    
     res.render("urls_show", templateVars);
   } else {
     res.status(401).send("Unauthorized to Edit. Please Login");
@@ -153,7 +159,7 @@ app.post("/urls/:id", (req, res) => {
   const user = req.session.userId;
 
   if (urlDatabase[id].userId === user) {
-    const longURL = req.body.longURL;
+    let longURL = req.body.longURL;
     urlDatabase[id].longURL = longURL;
     res.redirect("/urls");
   } else {
@@ -175,7 +181,7 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const knowUser = getUserByUsername(email, users);
+  const knowUser = getUserByEmail(email, users);
 
   if (!knowUser) {
     const templateVars = {
@@ -233,7 +239,7 @@ app.post("/register", (req, res) => {
     email: email,
     password: hash,
   };
-  const userEmail = usernameSearch(email, users);
+  const userEmail = existEmail(email, users);
 
   if (!userEmail) {
     users[newId] = user;
