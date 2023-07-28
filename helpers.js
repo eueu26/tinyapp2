@@ -5,7 +5,10 @@ const generateRandomString = function () {
 const urlsForUser = (id, urlDatabase) => {
   const urlsUser = {};
   for (const shortUrl in urlDatabase) {
-    urlsUser[shortUrl] = urlDatabase[shortUrl];
+    if (id === urlDatabase[shortUrl].userId) {
+      urlsUser[shortUrl] = urlDatabase[shortUrl];
+
+    }
   }
   return urlsUser;
 };
@@ -20,14 +23,6 @@ const getUserByEmail = (email, users) => {
 };
 
 
-const existEmail = (email, users) => {
-  for (let user in users) {
-    if (email === users[user].email) {
-      return true;
-    }
-  }
-};
-
 const getIdOfUser = (id, users) => {
   const user = users[id];
   if (user) {
@@ -36,6 +31,35 @@ const getIdOfUser = (id, users) => {
   return undefined;
 };
 
+const findEmailExist = (email, users) => {
+  for (let user in users) {
+    if (email === users[user].email) {
+      return email;
+    }
+  }
+  return undefined;
+};
 
 
-module.exports = { generateRandomString, urlsForUser, getUserByEmail,  existEmail, getIdOfUser};
+const findPasswordExist = (email, users) => {
+  for (let user in users) {
+    if (email === users[user].email) {
+      return users[user].password;
+    }
+  }
+  return undefined;
+};
+
+
+const findIdOfEmail = (email, users) => {
+  for (let user in users) {
+    if (email === users[user].email) {
+      return users[user].id;
+    }
+  }
+  return undefined;
+};
+
+
+
+module.exports = { generateRandomString, urlsForUser, findEmailExist, findPasswordExist, findIdOfEmail, getIdOfUser, getUserByEmail};

@@ -8,9 +8,10 @@ const cookieSession = require("cookie-session");
 const {
   generateRandomString,
   urlsForUser,
-  getUserByEmail,
-  existEmail,
-  getIdOfUser,
+  findEmailExist,
+  findPasswordExist,
+  findIdOfEmail,
+  getIdOfUser
 } = require("./helpers");
 
 /////////////////////////////////////////////////////////////////////
@@ -45,9 +46,7 @@ app.set("view engine", "ejs");
 // "Database"
 /////////////////////////////////////////////////////////////////////
 
-const urlDatabase = {
-  
-};
+const urlDatabase = {};
 
 const users = {
   userRandomID: {
@@ -93,7 +92,7 @@ app.post("/urls", (req, res) => {
   } else if (getIdOfUser(userId, users)) {
     const longURL = req.body.longURL;
     const id = generateRandomString();
-    urlDatabase[id] = {longURL, userId: userId};
+    urlDatabase[id] = { longURL, userId: userId };
     res.redirect(`/urls/${id}`);
   }
 });
@@ -103,16 +102,16 @@ app.post("/urls", (req, res) => {
 /////////////////////////////////////////////////////////////////////
 app.get("/urls/new", (req, res) => {
   const userId = req.session.userId;
-  if (userId) {
-    const templateVars = {
-      userId: req.session.userId,
-      user: users[req.session.userId],
-    };
-    res.render("urls_new", templateVars);
-  } else if (getIdOfUser(userId, users) === null) {
+  const templateVars = {
+    user: users[userId]
+  };
+  if (!userId) {
     res.redirect("/login");
+  } else {
+    res.render("urls_new", templateVars);
   }
 });
+
 
 app.get("/urls/:id", (req, res) => {
   const userId = req.session.userId;
@@ -123,7 +122,7 @@ app.get("/urls/:id", (req, res) => {
       longURL: urlDatabase[id].longURL,
       user: users[userId],
     };
-    
+
     res.render("urls_show", templateVars);
   } else {
     res.status(401).send("Unauthorized to Edit. Please Login");
@@ -181,31 +180,25 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const knowUser = getUserByEmail(email, users);
-
-  if (!knowUser) {
-    const templateVars = {
-      status: 401,
-      message: "Please Register if email or password is not created.",
-      user: users[req.session.userId],
-    };
-    res.status(401).render("urls_error", templateVars);
-  } else if (!bcrypt.compareSync(password, knowUser.password)) {
-    const templateVars = {
-      status: 401,
-      message: "Incorrect email or password.",
-      user: users[req.session.userId],
-    };
-    res.status(401).render("urls_error", templateVars);
+  const userEmail = findEmailExist(email, users);
+  const userPassword = findPasswordExist(email, users);
+  if (email === userEmail) {
+    if (bcrypt.compareSync(password, userPassword)) {
+      const userId = findIdOfEmail(email, users);
+      req.session.userId = userId;
+      res.redirect("/urls");
+    } else {
+      res.status(403).send("Wrong Password Please Try again");
+    }
   } else {
-    req.session.userId = knowUser.userId;
-    res.redirect("/urls");
+    res.status(401).send("Unauthorized: Please Register");
   }
 });
 
+
 app.post("/logout", (req, res) => {
   req.session.userId = null;
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 
 /////////////////////////////////////////////////////////////////////
@@ -239,7 +232,7 @@ app.post("/register", (req, res) => {
     email: email,
     password: hash,
   };
-  const userEmail = existEmail(email, users);
+  const userEmail = findEmailExist(email, users);
 
   if (!userEmail) {
     users[newId] = user;
