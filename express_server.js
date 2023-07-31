@@ -11,7 +11,7 @@ const {
   findEmailExist,
   findPasswordExist,
   findIdOfEmail,
-  getIdOfUser
+  getIdOfUser,
 } = require("./helpers");
 
 /////////////////////////////////////////////////////////////////////
@@ -75,25 +75,27 @@ app.get("/urls", (req, res) => {
   const userId = req.session.userId;
   const user = getIdOfUser(userId, users);
   if (!user) {
-    return res.redirect("/login");
+    return res.status(401).send("Please Login");
+  } else {
+    const templateVars = {
+      urls: urlsForUser(userId, urlDatabase),
+      userId: userId,
+      user: users[userId],
+    };
+    res.render("urls_index", templateVars);
   }
-  const templateVars = {
-    urls: urlsForUser(userId, urlDatabase),
-    userId: userId,
-    user: users[userId],
-  };
-  res.render("urls_index", templateVars);
 });
 
 app.post("/urls", (req, res) => {
   const userId = req.session.userId;
-  if (!userId) {
-    res.status(401).send("Unauthorized access. Please Login");
-  } else if (getIdOfUser(userId, users)) {
-    const longURL = req.body.longURL;
-    const id = generateRandomString();
+  const longURL = req.body.longURL;
+  const id = generateRandomString();
+  if (getIdOfUser(userId, users)) {
     urlDatabase[id] = { longURL, userId: userId };
+
     res.redirect(`/urls/${id}`);
+  } else {
+    return res.status(401).send("Unauthorized access. Please Login");
   }
 });
 
@@ -103,29 +105,30 @@ app.post("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   const userId = req.session.userId;
   const templateVars = {
-    user: users[userId]
+    user: users[userId],
   };
   if (!userId) {
-    res.redirect("/login");
+    res.send("Please Login");
   } else {
     res.render("urls_new", templateVars);
   }
 });
 
-
 app.get("/urls/:id", (req, res) => {
   const userId = req.session.userId;
   const id = req.params.id;
+  if (!urlDatabase[id]) {
+    res.status(404).send("This URL does not exist");
+  }
   if (urlDatabase[id].userId === userId) {
     const templateVars = {
       id,
       longURL: urlDatabase[id].longURL,
       user: users[userId],
     };
-
     res.render("urls_show", templateVars);
   } else {
-    res.status(401).send("Unauthorized to Edit. Please Login");
+    res.status(401).send("Please Login");
   }
 });
 
@@ -135,7 +138,8 @@ app.get("/u/:id", (req, res) => {
     return res.status(404).send("URL not found.");
   }
   const longURL = urlDatabase[id].longURL;
-
+  console.log("longURL", longURL);
+  console.log("id", id);
   res.redirect(longURL);
 });
 
@@ -191,10 +195,9 @@ app.post("/login", (req, res) => {
       res.status(403).send("Wrong Password Please Try again");
     }
   } else {
-    res.status(401).send("Unauthorized: Please Register");
+    res.status(401).send("Unauthorized access Please Register");
   }
 });
-
 
 app.post("/logout", (req, res) => {
   req.session.userId = null;
